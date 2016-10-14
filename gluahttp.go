@@ -136,6 +136,9 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 	if err != nil {
 		return nil, err
 	}
+	if L.Options.Context != nil {
+		req = req.WithContext(L.Options.Context)
+	}
 
 	if options != nil {
 		if reqHeaders, ok := options.RawGet(lua.LString("headers")).(*lua.LTable); ok {
@@ -193,7 +196,6 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 
 func (h *httpModule) doRequestAndPush(L *lua.LState, method string, url string, options *lua.LTable) int {
 	response, err := h.doRequest(L, method, url, options)
-
 	if err != nil {
 		L.Push(lua.LNil)
 		L.Push(lua.LString(fmt.Sprintf("%s", err)))
