@@ -62,11 +62,12 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| headers | Table  | Additional headers to send with the request |
+| Name        | Type   | Description |
+| ----------- | ------ | ----------- |
+| query       | String | URL encoded query params |
+| cookies     | Table  | Additional cookies to send with the request |
+| headers     | Table  | Additional headers to send with the request |
+| no_redirect | Bool   | Don't follow redirects |
 
 **Returns**
 

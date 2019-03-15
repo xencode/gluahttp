@@ -8,19 +8,13 @@ import "io/ioutil"
 import "strings"
 
 type httpModule struct {
-	do func(req *http.Request) (*http.Response, error)
+	client *http.Client
 }
 
 type empty struct{}
 
 func NewHttpModule(client *http.Client) *httpModule {
-	return NewHttpModuleWithDo(client.Do)
-}
-
-func NewHttpModuleWithDo(do func(req *http.Request) (*http.Response, error)) *httpModule {
-	return &httpModule{
-		do: do,
-	}
+	return &httpModule{client: client}
 }
 
 func (h *httpModule) Loader(L *lua.LState) int {
@@ -135,6 +129,10 @@ func (h *httpModule) requestBatch(L *lua.LState) int {
 	}
 }
 
+func noRedirectFunc(req *http.Request, via []*http.Request) error {
+	return http.ErrUseLastResponse
+}
+
 func (h *httpModule) doRequest(L *lua.LState, method string, url string, options *lua.LTable) (*lua.LUserData, error) {
 	req, err := http.NewRequest(strings.ToUpper(method), url, nil)
 	if err != nil {
@@ -144,6 +142,8 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 	if ctx := L.Context(); ctx != nil {
 		req = req.WithContext(ctx)
 	}
+
+	noRedirect := false
 
 	if options != nil {
 		if reqCookies, ok := options.RawGet(lua.LString("cookies")).(*lua.LTable); ok {
@@ -181,9 +181,16 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 				req.Header.Set(key.String(), value.String())
 			})
 		}
+
+		noRedirect = lua.LVAsBool(options.RawGet(lua.LString("no_redirect")))
 	}
 
-	res, err := h.do(req)
+	client := *h.client
+	if noRedirect {
+		client.CheckRedirect = noRedirectFunc
+	}
+
+	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

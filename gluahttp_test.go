@@ -109,6 +109,21 @@ func TestRequestGetWithRedirect(t *testing.T) {
 	}
 }
 
+func TestRequestGetWithRedirectDisabled(t *testing.T) {
+	listener, _ := net.Listen("tcp", "127.0.0.1:0")
+	setupServer(listener)
+
+	if err := evalLua(t, `
+		local http = require("http")
+		response, error = http.request("get", "http://`+listener.Addr().String()+`/redirect", {no_redirect=true})
+
+		assert_equal(302, response['status_code'])
+		assert_equal('http://`+listener.Addr().String()+`/redirect', response['url'])
+	`); err != nil {
+		t.Errorf("Failed to evaluate script: %s", err)
+	}
+}
+
 func TestRequestPostForm(t *testing.T) {
 	listener, _ := net.Listen("tcp", "127.0.0.1:0")
 	setupServer(listener)
